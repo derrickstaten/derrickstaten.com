@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kamikaze Fighter — JavaScript port</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<style>
+  :root{
+    --bezel:#cdc5b0; --bezel-hi:#e0d9c6; --bezel-lo:#9d9581;
+    --paper:#ddd7c6; --ink:#221f18; --ink-soft:#5c564a; --rule:rgba(34,31,24,.18);
+    --mono:"Courier New",Courier,monospace;
+    --pad:clamp(.75rem,1.5vw,1.4rem);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;overflow:hidden;
+    background:var(--paper);
+    background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.022) 0 1px,transparent 1px 3px);
+    color:var(--ink);
+    font:13px/1.55 Verdana,Geneva,Tahoma,sans-serif;
+  }
+  .app{
+    height:100dvh;
+    display:grid;
+    grid-template-columns:minmax(300px,380px) 1fr;
+    gap:clamp(1rem,2vw,2rem);
+    padding:var(--pad);
+  }
+  .side{
+    min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-right:.6rem;
+    scrollbar-width:thin;scrollbar-color:var(--bezel-lo) transparent;
+  }
+  .side::-webkit-scrollbar{width:6px}
+  .side::-webkit-scrollbar-thumb{background:var(--bezel-lo);border-radius:3px}
+  .eyebrow{
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-soft);margin:0 0 .35rem;
+  }
+  h1{
+    font:400 clamp(1.9rem,3.4vw,2.6rem)/.88 Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif;
+    text-transform:uppercase;margin:0 0 1.1rem;
+  }
+  h1 em{font-style:normal;color:#00aa00;display:block}
+  h2{
+    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--ink-soft);
+    margin:0 0 .5rem;padding-bottom:.3rem;border-bottom:1px solid var(--rule);
+  }
+  .side section{margin-bottom:1.1rem}
+  .side p{margin:0 0 .5rem}
+  .keys{list-style:none;margin:0;padding:0;display:grid;gap:.3rem}
+  .keys li{display:flex;gap:.55rem;align-items:baseline}
+  kbd{
+    font-family:var(--mono);font-size:10px;background:var(--bezel);
+    border:1px solid var(--bezel-lo);border-bottom-width:2px;border-radius:3px;
+    padding:.1em .4em;white-space:nowrap;flex:none;
+  }
+  .fine{font-family:var(--mono);font-size:14px;line-height:1.32;color:var(--ink)}
+  .fine code{font-size:14px}
+  .stage{min-width:0;min-height:0;display:flex;align-items:center;justify-content:center}
+  .bezel{
+    padding:14px 14px 32px;border-radius:10px;
+    background:linear-gradient(163deg,var(--bezel-hi),var(--bezel) 42%,var(--bezel-lo));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.14),
+               0 16px 32px -16px rgba(0,0,0,.45);
+    position:relative;
+  }
+  .screen{background:#000;border-radius:3px;overflow:hidden;line-height:0;
+    box-shadow:inset 0 0 0 3px rgba(0,0,0,.55)}
+  canvas{display:block;width:100%;height:100%}
+  canvas:focus{outline:2px solid #00aa00;outline-offset:-2px}
+  .plate{
+    position:absolute;left:14px;right:14px;bottom:9px;
+    display:flex;gap:.5rem;align-items:center;
+    font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:#6d6653;
+  }
+  .led{width:6px;height:6px;border-radius:50%;background:#ffaa00;box-shadow:0 0 6px #ffaa00;flex:none}
+  .plate .right{margin-left:auto}
+  @media (max-width:820px){
+    body{overflow:auto}
+    .app{display:block;height:auto}
+    .side{overflow:visible;padding-right:0}
+    .stage{margin-top:1.25rem}
+    .plate .right{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="side">
+    <p class="eyebrow">H:\kamikaze\ &middot; 2004</p>
+    <h1>Kamikaze <em>Fighter</em></h1>
+
+    <section>
+      <h2>Controls</h2>
+      <ul class="keys">
+        <li><kbd>&larr;&uarr;&darr;&rarr;</kbd><span>Move</span></li>
+        <li><kbd>Space</kbd><span>Fire</span></li>
+        <li><kbd>1</kbd>&ndash;<kbd>5</kbd><span>Switch gun</span></li>
+        <li><kbd>P</kbd><span>Pause</span></li>
+        <li><kbd>C</kbd><span>Continue</span></li>
+        <li><kbd>Esc</kbd><span>Quit</span></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Rules</h2>
+      <p class="fine">
+        Gun upgrades unlocked at 5, 10, 15 and 20 kills. Extra lives at 30, 60 and 90.
+        Take a hit and the streak resets &mdash; you lose every gun back down to the first.
+        Gun 4 fires a three-way spread; gun 5 is &ldquo;guided&rdquo;. Note: enemies are
+        fully invisible on the final level, level 13; that&rsquo;s part of the fun.
+      </p>
+    </section>
+
+    <section>
+      <h2>About</h2>
+      <p class="fine">
+        Written in QBASIC in 2004 by Derrick Staten on a school lab machine. A single loop
+        detects input (ship movement, firing guns) and moves enemies. Levels were loaded via
+        CSV, five guns, ASCII character 127 (&#8962;) for a ship, leaderboard stored in
+        plain text. Classmates had fun manually writing themselves into the top of the
+        leaderboard file.
+      </p>
+      <p class="fine">
+        Rewritten by Claude in Javascript, staying faithful to all of the quirks of the
+        original.
+      </p>
+    </section>
+
+  </aside>
+
+  <main class="stage">
+    <div class="bezel">
+      <div class="screen">
+        <canvas id="scr" width="1600" height="1200" tabindex="0"
+                aria-label="Kamikaze Fighter game screen"></canvas>
+      </div>
+      <div class="plate">
+        <span class="led"></span><span>80&times;50 text</span>
+        <span class="right">Click to play</span>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<script>
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LEVEL DATA — the .txt files, verbatim
+   ══════════════════════════════════════════════════════════════════════════ */
+const LEVEL_DATA = {
+  1: "\"X\",13,3,3,6,1,\"RWDWLWDWLWDWLWDWRWDWRWDW\"\n\"X\",13,3,5,8,1,\"DWDWDWDWDWDWDWDW\"\n\"X\",13,3,5,12,1,\"DWLWRWDWLW\"\n\"X\",13,6,4,19,1,\"LWLWDWDWRWRWDWDW\"\n\"X\",13,4,13,22,1,\"RWRWDWDWDWLW\"\n\"X\",13,8,3,25,1,\"DWDWDWLWRWLWRWDW\"\n\"X\",13,14,3,3,1,\"DWDWRWRWDW\"\n\"X\",13,0,3,6,1,\"RWDWLWLWDW\" \n\"X\",13,0,3,6,1,\"DWRWDWRWAW\"\n\"X\",13,0,5,8,1,\"DWDWDW\"\n\"X\",13,0,5,12,1,\"DWDWRWRWDWDWLWLW\"\n\"X\",13,0,4,19,1,\"LWRW\"\n\"X\",13,0,13,22,1,\"DWRWLW\"\n\"X\",13,0,3,25,1,\"DWUWDWDWUW\"\n\"X\",13,0,3,3,1,\"DWLW\"\n",
+  2: "\"X\",13,3,3,6,1,\"DWDWLWLW\"\n\"X\",13,3,5,8,1,\"AW\"\n\"X\",13,3,5,12,1,\"DWLWDWRWDW\"\n\"X\",13,6,4,19,1,\"DWDWAW\"\n\"X\",13,4,13,22,1,\"WDWLWR\"\n\"X\",13,8,3,25,1,\"WLWR\"\n\"X\",13,15,3,3,1,\"AWDW\"\n\"X\",13,3,3,6,1,\"LWRW\"\n\"X\",13,3,3,6,1,\"DWLWRWUW\"\n\"X\",13,0,5,8,1,\"WUWDWA\"\n\"X\",13,0,5,12,1,\"WUWD\"\n\"X\",13,0,4,19,1,\"WLWRWUWD\"\n\"X\",13,0,13,22,1,\"WWWWWD\"\n\"X\",13,0,3,25,1,\"WWWWWDWL\"\n\"X\",13,0,3,3,1,\"WDWDWR\"\n",
+  3: "\"X\",13,5,3,6,1,\"WWD\"\n\"X\",13,5,5,8,1,\"AWAW\"\n\"X\",13,5,5,12,1,\"WD\"\n\"X\",13,8,4,19,1,\"WUWDWD\"\n\"X\",13,6,13,22,1,\"WUWD\"\n\"X\",13,10,3,25,1,\"WUWDWAWA\"\n\"X\",13,16,3,3,1,\"WDWR\"\n\"X\",13,4,3,6,1,\"WDWL\"\n\"X\",13,4,3,6,1,\"WDWRWA\"\n\"X\",13,4,5,8,1,\"WDWLWA\"\n\"X\",13,4,5,12,1,\"DWUWAWAW\"\n\"X\",13,0,4,19,1,\n\"X\",13,0,13,22,1,\n\"X\",13,0,3,25,1,\n\"X\",13,0,3,3,1,\n",
+  4: "\"X\",12,3,3,6,1,\"WD\"\n\"X\",13,3,5,8,1,\"WUWDWD\"\n\"X\",13,3,5,12,1,\"WDWDWAWAWU\"\n\"X\",13,6,4,19,1,\"WWWWD\"\n\"X\",13,4,13,22,1,\"AWAWAWAW\"\n\"X\",13,8,3,25,1,\"WDWLWRWD\"\n\"X\",13,22,3,3,1,\"WDWRWU\"\n\"X\",13,12,3,6,1,\"WDWA\" \n\"X\",13,10,3,6,1,\"WUWUWD\"\n\"X\",13,6,5,8,1,\"WLWRWD\"\n\"X\",13,6,5,12,1,\"WRWDWLWD\"\n\"X\",13,0,4,19,1,\n\"X\",13,0,13,22,1,\n\"X\",13,0,3,25,1,\n\"X\",13,0,3,3,1,\n",
+  5: "\"X\",13,6,3,6,1,\"WD\"\n\"X\",13,6,5,8,1,\"WLWD\"\n\"X\",13,6,5,12,1,\"WUWDWD\"\n\"X\",13,12,4,19,1,\"WUWDWD\"\n\"X\",13,8,13,22,1,\"WLWRWDWD\"\n\"X\",13,16,3,25,1,\"WDWDWUWLWRWD\"\n\"X\",3,44,3,3,1,\"D\"\n\"X\",13,0,3,6,1, \n\"X\",13,0,3,6,1,\n\"X\",13,0,5,8,1,\n\"X\",13,0,5,12,1,\n\"X\",13,0,4,19,1,\n\"X\",13,0,13,22,1,\n\"X\",13,0,3,25,1,\n\"X\",13,0,3,3,1,\n",
+  6: "\"X\",13,3,3,6,1,\"WD\"\n\"X\",13,3,5,8,1,\"WD\"\n\"X\",13,3,5,12,1,\"WD\"\n\"X\",13,3,4,19,1,\"WD\"\n\"X\",13,2,13,22,1,\"WUWDWD\"\n\"X\",13,4,3,25,1,\"WUWDWD\"\n\"X\",13,11,3,3,1,\"WUWDWD\"\n\"X\",13,3,3,6,1,\"WDWUWU\"\n\"X\",13,3,3,6,1,\"WLWLWRWRWD\"\n\"X\",13,3,5,8,1,\"WDWDWLWR\"\n\"X\",13,3,5,12,1,\"WDWDWLWD\"\n\"X\",13,3,4,19,1,\"WDWDWRWD\"\n\"X\",13,3,13,22,1,\"WD\"\n\"X\",13,3,3,25,1,\"WUWDWD\"\n\"X\",13,3,3,3,1,\"WUWDWD\"\n",
+  7: "\"X\",20,10,3,6,1,\"WD\"\n\"X\",20,10,5,8,1,\"WUWDWD\"\n\"X\",20,10,5,12,1,\"WAWAWAWA\"\n\"X\",20,12,4,19,1,\"WAWAWAWA\"\n\"X\",20,11,13,22,1,\"WAWAWA\"\n\"X\",20,15,3,25,1,\"WAWD\"\n\"X\",20,29,3,3,1,\"WAWU\"\n\"X\",20,7,3,6,1, \"WAWD\"\n\"X\",20,7,3,6,1,\"WAWD\"\n\"X\",20,0,5,8,1,\"WAWAWA\"\n\"X\",20,0,5,12,1,\"WAWA\"\n\"X\",20,0,4,19,1,\"WAWA\"\n\"X\",20,0,13,22,1,\n\"X\",20,0,3,25,1,\n\"X\",20,0,3,3,1,\n",
+  8: "\"X\",13,0,3,6,1,\n\"X\",13,0,5,8,1,\n\"X\",13,0,5,12,1,\n\"X\",13,0,4,19,1,\n\"X\",13,0,13,22,1,\n\"X\",13,0,3,25,1,\n\"X\",23,25,3,3,1,\"WAWAWA\"\n\"X\",13,0,3,6,1, \n\"X\",13,0,3,6,1,\n\"X\",13,0,5,8,1,\n\"X\",13,0,5,12,1,\n\"X\",13,0,4,19,1,\n\"X\",13,0,13,22,1,\n\"X\",13,0,3,25,1,\n\"X\",13,0,3,3,1,\n",
+  9: "\"X\",13,5,3,6,1,\"WDWDWDRRW\"\n\"X\",13,5,5,8,1,\"WDWDWUWR\"\n\"X\",13,5,5,12,1,\"WDWDWUWLRWRWR\"\n\"X\",13,10,4,19,1,\"WDWDWUWLRWRWR\"\n\"X\",13,8,13,22,1,\"WD\"\n\"X\",13,10,3,25,1,\"WDWLWDWDWUWUWRWRWR\"\n\"X\",13,22,3,3,1,\"WDWDWUWLWLWRWUWLWLWDWDWDWD\"\n\"X\",12,20,20,20,1, \"WAWAWAWAAADAAADDAAADDDDADADADADDDDADLRDDLADLALDULADW\" \n\"X\",13,0,3,6,1,\n\"X\",13,0,5,8,1,\n\"X\",13,0,5,12,1,\n\"X\",13,0,4,19,1,\n\"X\",13,0,13,22,1,\n\"X\",13,0,3,25,1,\n\"X\",13,0,3,3,1,\n",
+  10: "\"X\",13,3,3,6,1,\"WDWDWDWRWRWLWLWDWD\"\n\"X\",13,3,5,8,1,\"WDWDWDWUWLWRWRWRWR\"\n\"X\",13,3,5,12,1,\"WDWDUWRWUWRWDWLWDWLWD\"\n\"X\",13,6,4,19,1,\"WDWDWDWRWRWDWDWLWLWDWDWRWR\"\n\"X\",13,4,13,22,1,\"WDWLWRWRWDWDWLWLWDWD\"\n\"X\",13,8,3,25,1,\"WDWDWLWRWRWDWDWRWRWDWDWL\"\n\"X\",13,22,3,3,1,\"WDWDWLWLWDWDWRWR\"\n\"X\",13,13,3,6,1,\"WDWDWDWLWLWRWRAAAAA\" \n\"X\",13,13,3,6,1,\"WAWAWAAA\"\n\"X\",13,10,5,8,1,\"WAAAAA\"\n\"X\",13,0,5,12,1,\n\"X\",13,0,4,19,1,\n\"X\",13,0,13,22,1,\n\"X\",13,0,3,25,1,\n\"X\",13,0,3,3,1,\n",
+  11: "\"X\",13,3,3,6,1,\"WDWDWRWRWLWLWRWRWDWDWDWD\"\n\"X\",13,3,5,8,1,\"WDWAWDWAWDWA\"\n\"X\",13,3,5,12,1,\"WDWA\"\n\"X\",13,3,4,19,1,\"WDWAWDWRWDWAWL\"\n\"X\",13,3,13,22,1,\"AAAAAAAAAAAAAAAA\"\n\"X\",13,3,3,25,1,\"WDWAWAWDWDWAWAWLWRWAWAWD\"\n\"X\",13,3,3,3,1,\"WDWDWAWA\"\n\"X\",13,3,3,6,1, \"WAWAWAWAWDWDWDWD\"\n\"X\",13,3,3,6,1,\"WDWDWDWD\"\n\"X\",13,3,5,8,1,\"WDWDWAWAWLWDWRWDWA\"\n\"X\",13,3,5,12,1,\"WA\"\n\"X\",13,3,4,19,1,\"WAWAWDWDWLWDWRWA\"\n\"X\",13,3,13,22,1,\"WA\"\n\"X\",13,3,3,25,1,\"WDWDDD\"\n\"X\",13,3,3,3,1,\"WDWDWAWAWLWDWLWDWRWDWRWDWA\"\n",
+  12: "\"X\",25,22,3,6,1,\"WAWA\"\n\"X\",25,22,5,8,1,\"WAWD\"\n\"X\",25,22,5,12,1,\"WAWD\"\n\"X\",25,22,4,19,1,\"WAWD\"\n\"X\",25,22,13,22,1,\"WAWD\"\n\"X\",25,22,3,25,1,\"WAWD\"\n\"X\",25,22,3,3,1,\"WAWD\"\n\"X\",25,22,3,6,1, \"WAWD\"\n\"X\",25,22,3,6,1,\"WAWD\"\n\"X\",25,22,5,8,1,\"WAWD\"\n\"X\",25,22,5,12,1,WAWD\"\n\"X\",13,0,4,19,1,\n\"X\",13,0,13,22,1,\n\"X\",13,0,3,25,1,\n\"X\",13,0,3,3,1,\n",
+  13: "\"X\",0,22,3,6,1,\"WDWA\"\n\"X\",0,22,5,8,1,\"WDWA\"\n\"X\",0,22,5,12,1,WDWA\"\n\"X\",0,22,4,19,1,WDWA\"\n\"X\",0,22,13,22,1,WDWA\"\n\"X\",0,22,3,25,1,WDWA\"\n\"X\",0,22,3,3,1,WDWA\"\n\"X\",13,0,3,6,1, \n\"X\",13,0,3,6,1,\n\"X\",13,0,5,8,1,\n\"X\",13,0,5,12,1,\n\"X\",13,0,4,19,1,\n\"X\",13,0,13,22,1,\n\"X\",13,0,3,25,1,\n\"X\",13,0,3,3,1,\n",
+};
+const HISCORE_DATA = "\"Derrick wins\",31647\n\"Derrick The Man\",28297\n\"Derrick the Master\",25278\n\"Derrick\",2141\n\"Derrick\",1615\n\"Derrick the Bad\",1290\n\"High\",1000\n\"Nobody\",900\n\"Somebody\",800\n\"Derrick\",700\n";
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   1. SCREEN — a reimplementation of QBasic's SCREEN 0 / WIDTH 80,50
+   Gives us CLS, LOCATE, COLOR, PRINT, PRINT USING, STRING$, SPC, TAB so the
+   game logic below can be transcribed from the BASIC almost line for line.
+   ══════════════════════════════════════════════════════════════════════════ */
+const COLS = 80, ROWS = 50;
+const Scr = {
+  ch: new Uint8Array(COLS * ROWS).fill(32),
+  at: new Uint8Array(COLS * ROWS).fill(7),
+  row: 1, col: 1, color: 7
+};
+
+function cls() {
+  Scr.ch.fill(32); Scr.at.fill(Scr.color & 15);
+  Scr.row = 1; Scr.col = 1;
+}
+function locate(r, c) { Scr.row = r; Scr.col = c; }
+function color(n) { Scr.color = n; }
+
+function scroll() {
+  Scr.ch.copyWithin(0, COLS); Scr.at.copyWithin(0, COLS);
+  Scr.ch.fill(32, COLS * (ROWS - 1)); Scr.at.fill(Scr.color & 15, COLS * (ROWS - 1));
+  Scr.row = ROWS;
+}
+function put(code) {
+  if (Scr.row > ROWS) scroll();
+  const i = (Scr.row - 1) * COLS + (Scr.col - 1);
+  if (i >= 0 && i < Scr.ch.length) { Scr.ch[i] = code; Scr.at[i] = Scr.color; }
+  Scr.col++;
+  if (Scr.col > COLS) { Scr.col = 1; Scr.row++; }
+}
+function print(s) {
+  s = String(s);
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c === 10) { Scr.col = 1; Scr.row++; if (Scr.row > ROWS) scroll(); }
+    else put(c);
+  }
+}
+function println(s) { if (s !== undefined) print(s); Scr.col = 1; Scr.row++; if (Scr.row > ROWS) scroll(); }
+
+// QBasic prints numbers with a leading space when positive and always a trailing space.
+function num(n) {
+  const v = Math.round(n * 1e6) / 1e6;
+  return (v < 0 ? "-" : " ") + String(Math.abs(v)) + " ";
+}
+const STRING$ = (n, c) => (typeof c === "number" ? String.fromCharCode(c) : c).repeat(Math.max(0, n));
+const SPC = n => " ".repeat(Math.max(0, n));
+function TAB(n) { while (Scr.col < n) put(32); }
+
+// PRINT USING: supports "###" numeric fields and "\  \" string fields.
+function printUsing(fmt, ...args) {
+  let out = "", ai = 0, i = 0;
+  while (i < fmt.length) {
+    const c = fmt[i];
+    if (c === "#") {
+      let w = 0; while (fmt[i] === "#") { w++; i++; }
+      const s = String(Math.round(Number(args[ai++]) || 0));
+      out += s.length > w ? "%" + s : s.padStart(w, " ");
+    } else if (c === "\\") {
+      const j = fmt.indexOf("\\", i + 1);
+      if (j < 0) { out += c; i++; continue; }
+      const w = j - i + 1, s = String(args[ai++] ?? "");
+      out += s.length >= w ? s.slice(0, w) : s.padEnd(w, " ");
+      i = j + 1;
+    } else { out += c; i++; }
+  }
+  println(out);
+}
+
+/* ── Renderer: paints the character buffer onto a canvas ──────────────────── */
+const DOS = ["#000000","#0000aa","#00aa00","#00aaaa","#aa0000","#aa00aa","#aa5500","#aaaaaa",
+             "#555555","#5555ff","#55ff55","#55ffff","#ff5555","#ff55ff","#ffff55","#ffffff"];
+// The three CP437 glyphs this game uses that aren't plain ASCII.
+const CP437 = { 127: "\u2302", 248: "\u00b0", 249: "\u2219" };
+const glyph = c => CP437[c] || String.fromCharCode(c);
+
+const cvs = document.getElementById("scr");
+const ctx = cvs.getContext("2d", { alpha: false });
+const CW = cvs.width / COLS, CH = cvs.height / ROWS;   // 20 x 24
+const shadowCh = new Int16Array(COLS * ROWS).fill(-1);
+const shadowAt = new Int16Array(COLS * ROWS).fill(-1);
+let blinkOn = true;
+
+ctx.fillStyle = "#000"; ctx.fillRect(0, 0, cvs.width, cvs.height);
+ctx.textAlign = "center"; ctx.textBaseline = "middle";
+ctx.font = `bold ${Math.floor(CH * 0.86)}px ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace`;
+
+function render(force) {
+  for (let i = 0; i < Scr.ch.length; i++) {
+    const at = Scr.at[i], blinking = at >= 16;
+    const eff = blinking && !blinkOn ? -2 : at;
+    if (!force && shadowCh[i] === Scr.ch[i] && shadowAt[i] === eff) continue;
+    shadowCh[i] = Scr.ch[i]; shadowAt[i] = eff;
+    const x = (i % COLS) * CW, y = ((i / COLS) | 0) * CH;
+    ctx.fillStyle = "#000"; ctx.fillRect(x, y, CW, CH);
+    if (eff === -2 || Scr.ch[i] === 32) continue;
+    ctx.fillStyle = DOS[at & 15];
+    ctx.fillText(glyph(Scr.ch[i]), x + CW / 2, y + CH / 2 + 1);
+  }
+}
+setInterval(() => { blinkOn = !blinkOn; }, 267);   // VGA blinks at ~1.875 Hz
+
+/* ── Sound: a small MML player standing in for QBasic's PLAY ──────────────── */
+let actx = null;
+function play(mml) {
+  if (!mml) return;
+  try {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === "suspended") actx.resume();
+  } catch (e) { return; }
+  let octave = 4, len = 4, tempo = 120, t = actx.currentTime, i = 0;
+  const SEMI = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+  const s = mml.toUpperCase().replace(/\s+/g, "");
+  const readInt = () => { let d = ""; while (i < s.length && s[i] >= "0" && s[i] <= "9") d += s[i++]; return d ? +d : null; };
+  while (i < s.length) {
+    const c = s[i++];
+    if (c === "O") { const v = readInt(); if (v !== null) octave = Math.min(6, v); }
+    else if (c === "L") { const v = readInt(); if (v) len = v; }
+    else if (c === "T") { const v = readInt(); if (v) tempo = v; }
+    else if (c === "P" || c === "R") { const v = readInt() || len; t += 240 / tempo / v; }
+    else if (SEMI[c] !== undefined) {
+      let semi = SEMI[c];
+      if (s[i] === "#" || s[i] === "+") { semi++; i++; } else if (s[i] === "-") { semi--; i++; }
+      const v = readInt() || len;
+      let dur = 240 / tempo / v;
+      while (s[i] === ".") { dur *= 1.5; i++; }
+      // QBasic's octave 0 starts at C ≈ 65.4 Hz
+      const freq = 65.406 * Math.pow(2, octave + semi / 12);
+      const osc = actx.createOscillator(), g = actx.createGain();
+      osc.type = "square"; osc.frequency.value = freq;
+      g.gain.setValueAtTime(0.05, t);
+      g.gain.setValueAtTime(0.05, t + dur * 0.85);
+      g.gain.linearRampToValueAtTime(0, t + dur);
+      osc.connect(g).connect(actx.destination);
+      osc.start(t); osc.stop(t + dur);
+      t += dur;
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   2. INPUT — stands in for INKEY$ and its keyboard buffer
+   ══════════════════════════════════════════════════════════════════════════ */
+const kbuf = [];
+const EXT = { ArrowLeft:"\x00K", ArrowDown:"\x00P", ArrowRight:"\x00M", ArrowUp:"\x00H" };
+addEventListener("keydown", e => {
+  let k = null;
+  if (EXT[e.key]) k = EXT[e.key];
+  else if (e.key === "Escape") k = "\x1b";
+  else if (e.key === "Enter") k = "\r";
+  else if (e.key === "Backspace") k = "\b";
+  else if (e.key.length === 1) k = e.key;
+  if (k === null) return;
+  if (EXT[e.key] || e.key === " ") e.preventDefault();
+  if (kbuf.length < 16) kbuf.push(k);
+});
+const INKEY = () => kbuf.length ? kbuf.shift() : "";
+cvs.addEventListener("mousedown", () => cvs.focus());
+
+/* ══════════════════════════════════════════════════════════════════════════
+   3. INPUT # — QBasic's comma-separated file reader, quirks intact.
+   Unquoted fields are read up to the comma as-is, which is why the malformed
+   lines in levels 12 and 13 yield a movement string containing a stray quote
+   rather than raising an error.
+   ══════════════════════════════════════════════════════════════════════════ */
+function parseLine(line) {
+  const f = []; let i = 0;
+  while (f.length < 7) {
+    while (line[i] === " ") i++;
+    if (i >= line.length) { f.push(""); continue; }
+    if (line[i] === '"') {
+      const j = line.indexOf('"', ++i);
+      f.push(j < 0 ? line.slice(i) : line.slice(i, j));
+      i = (j < 0 ? line.length : j + 1);
+      while (i < line.length && line[i] !== ",") i++;
+      i++;
+    } else {
+      const j = line.indexOf(",", i);
+      f.push((j < 0 ? line.slice(i) : line.slice(i, j)).trimEnd());
+      i = (j < 0 ? line.length : j + 1);
+    }
+  }
+  return f;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4. THE GAME — transcribed from KAMIKAZE.BAS
+   Note QBasic's LOCATE row, col: throughout, .X is a ROW and .Y is a COLUMN.
+   ══════════════════════════════════════════════════════════════════════════ */
+const LeftBorder = 17, TopBorder = 2, RightBorder = 46, BottomBorder = 40, BorderColor = 2;
+const TotalGuns = 5, TotalAmmo = 25, TotalLevels = 13, TotalEnemies = 15;
+const ShipOriginalX = 30, ShipOriginalY = 25;
+const ShipChar = 127, ShipColor = 3;
+
+let ShipX, ShipY, ShipOldX, ShipOldY, Lives;
+let Enemies, CurrentLevel, Points, Downtime, Seconds, EnemiesDefeated, InitialPoints;
+let GunSelected;
+
+const gunChar = [0, 249, 124, 248, 46, 94];              // CHR$(249) | CHR$(248) . ^
+const gunColor = [0,12,12,12,12,12], gunDamage = [0,1,2,3,4,5];
+let gunAvailable = [];
+const gunSound = ["", "", "", "", "", ""];               // silenced in the original source
+const HitSound = "", DestroySound = "";
+
+const fire = { char:[], color:[], type:[], damage:[], x:[], y:[], status:[] };
+const lv = { time:[], allowed:[], bonus:[], points:[], fired:[], hit:[], acc:[], accBonus:[] };
+const en = { char:[], color:[], maxHP:[], hp:[], x:[], y:[], oldX:[], oldY:[], cur:[], move:[], curMove:[] };
+let playerName = [], playerScore = [];
+
+function coldStart() {
+  ShipOldX = 30; ShipOldY = 14; Lives = 3;
+  for (let g = 0; g <= TotalGuns; g++) gunAvailable[g] = 0;
+  gunAvailable[1] = 1; GunSelected = 1;
+  for (let r = 0; r <= TotalAmmo; r++) { fire.status[r] = "Ready"; fire.x[r] = 0; fire.y[r] = 0; }
+  for (let l = 0; l <= TotalLevels; l++) {
+    lv.allowed[l] = 50; lv.time[l] = 0; lv.points[l] = 0;
+    lv.fired[l] = 0; lv.hit[l] = 0; lv.acc[l] = 0; lv.bonus[l] = 0; lv.accBonus[l] = 0;
+  }
+  Points = 0; Downtime = 0; EnemiesDefeated = 0; Enemies = 0;
+}
+
+/* ── SUB LoadEnemies ─────────────────────────────────────────────────────── */
+function loadEnemies() {
+  const lines = LEVEL_DATA[CurrentLevel].split(/\r?\n/).filter(l => l.length);
+  Enemies = 0;
+  for (let t = 1; t <= TotalEnemies; t++) {
+    const f = parseLine(lines[t - 1] ?? "");
+    en.char[t] = f[0]; en.color[t] = +f[1] || 0; en.maxHP[t] = +f[2] || 0;
+    en.x[t] = (+f[3] || 0) + TopBorder;
+    en.y[t] = (+f[4] || 0) + LeftBorder;
+    en.cur[t] = +f[5] || 1; en.move[t] = f[6]; en.curMove[t] = "";
+    en.oldX[t] = en.x[t] + 1; en.oldY[t] = en.y[t] + 1;
+    en.hp[t] = en.maxHP[t];
+    if (en.hp[t] > 0) Enemies++;
+  }
+}
+
+/* ── SUB PrintArena / PrintDisplay / the various printers ────────────────── */
+function printArena() {
+  cls(); color(BorderColor);
+  locate(TopBorder - 1, LeftBorder - 1); print(STRING$(RightBorder - LeftBorder + 24, "*"));
+  for (let x = TopBorder; x <= BottomBorder + 4; x++) {
+    locate(x, LeftBorder - 1); print("*");
+    locate(x, RightBorder + 1); print("*");
+    locate(x, RightBorder + 22); print("*");
+  }
+  locate(BottomBorder + 1, LeftBorder - 1); print(STRING$(RightBorder - LeftBorder + 24, "*"));
+  locate(BottomBorder + 5, LeftBorder - 1); print(STRING$(RightBorder - LeftBorder + 24, "*"));
+  color(7);
+}
+function printDisplay() {
+  locate(BottomBorder + 3, LeftBorder + 1); print("Points: ");
+  locate(BottomBorder + 3, LeftBorder + 16); print("Lives: " + STRING$(Lives, ShipChar));
+  locate(TopBorder + 2, RightBorder + 3); print("Level:" + num(CurrentLevel));
+  printPoints(); printAccuracy(); printGuns(); printTimer();
+}
+function printPoints() {
+  locate(BottomBorder + 3, LeftBorder + 8); print("        ");
+  locate(BottomBorder + 3, LeftBorder + 8); print(num(Points));
+}
+function printLives() {
+  locate(BottomBorder + 3, LeftBorder + 16); print("            ");
+  locate(BottomBorder + 3, LeftBorder + 16);
+  if (Lives < 0) { /* nothing */ }
+  else if (Lives > 0) print("Lives " + STRING$(Lives, ShipChar));
+  else print("Lives     ");
+}
+function printGuns() {
+  for (let g = 1; g <= TotalGuns; g++) {
+    color(GunSelected === g ? 12 : gunAvailable[g] === 1 ? 13 : 7);
+    locate(TopBorder + 10 + g, RightBorder + 3);
+    printUsing("Gun # - \\\\", g, String.fromCharCode(gunChar[g]));
+  }
+  color(7);
+}
+function printTimer() {
+  locate(BottomBorder + 3, RightBorder + 3);
+  printUsing("Time: ###", Math.floor(lv.time[CurrentLevel]));
+}
+function printAccuracy() {
+  if (lv.fired[CurrentLevel] > 0)
+    lv.acc[CurrentLevel] = Math.floor(lv.hit[CurrentLevel] / lv.fired[CurrentLevel] * 100 + 0.5);
+  locate(TopBorder + 4, RightBorder + 3); print("Shots Fired:" + num(lv.fired[CurrentLevel]));
+  locate(TopBorder + 5, RightBorder + 3); print("Shots Hit:  " + num(lv.hit[CurrentLevel]));
+  locate(TopBorder + 6, RightBorder + 3); printUsing("Accuracy:   ###%", lv.acc[CurrentLevel]);
+}
+function printShipColor() {
+  locate(ShipX, ShipY);
+  color(Downtime > Seconds ? ShipColor + 12 : ShipColor);
+  print(String.fromCharCode(ShipChar));
+  color(7);
+}
+
+/* ── SUB ResetVariables / ResetBullets ───────────────────────────────────── */
+function resetVariables() { Seconds = 0; ShipX = ShipOriginalX; ShipY = ShipOriginalY; Downtime = Seconds; }
+function resetBullets() {
+  for (let r = 1; r <= TotalAmmo; r++) {
+    if (fire.x[r] > 0 && fire.y[r] > 0) { locate(fire.x[r], fire.y[r]); print(" "); }
+    fire.x[r] = 0; fire.y[r] = 0; fire.status[r] = "Ready";
+  }
+}
+
+/* ── SUB CheckGunUpgrade ─────────────────────────────────────────────────── */
+function checkGunUpgrade() {
+  switch (EnemiesDefeated) {
+    case 90: case 60: case 30:
+      Lives++; printLives(); play("L32 o1AB o2CDE"); break;
+    case 20: gunAvailable[5] = 1; GunSelected = 5; play("o3 L64 ABCD"); break;
+    case 15: gunAvailable[4] = 1; GunSelected = 4; play("o3 L64 ABCD"); break;
+    case 10: gunAvailable[3] = 1; GunSelected = 3; play("o3 L64 ABCD"); break;
+    case 5:  gunAvailable[2] = 1; GunSelected = 2; play("o3 L64 ABCD"); break;
+    case 0:  for (let g = 2; g <= 5; g++) gunAvailable[g] = 0; GunSelected = 1; break;
+  }
+}
+
+/* ── SUB ShipHit ─────────────────────────────────────────────────────────── */
+function shipHit() {
+  if (Downtime <= Seconds) {
+    Lives--;
+    play("o04 L64 BB");
+    printLives();
+    Downtime = Seconds + 2;
+    EnemiesDefeated = 0;
+    checkGunUpgrade();
+    if (Lives > -1) printGuns();
+  }
+}
+
+/* ── SUB AmmunitionCollision ─────────────────────────────────────────────── */
+function ammunitionCollision() {
+  for (let r = 1; r <= TotalAmmo; r++) {
+    if (fire.status[r] !== "Fired") continue;
+    for (let t = 1; t <= TotalEnemies; t++) {
+      if (fire.x[r] === en.x[t] && fire.y[r] === en.y[t] && en.hp[t] > 0) {
+        en.hp[t] -= fire.damage[r];
+        play(HitSound);
+        if (en.hp[t] <= 0) {
+          locate(en.x[t], en.y[t]); print(" ");
+          Enemies--; EnemiesDefeated++;
+          lv.points[CurrentLevel] += 10 * en.maxHP[t];
+          Points += 10 * en.maxHP[t];
+          checkGunUpgrade(); printGuns();
+          play(DestroySound);
+        }
+        fire.x[r] = 0; fire.y[r] = 0; fire.status[r] = "Ready";
+        lv.points[CurrentLevel] += 10; Points += 10;
+        lv.hit[CurrentLevel]++;
+        printPoints(); printAccuracy();
+      }
+    }
+  }
+}
+
+/* ── SUB AmmunitionMovement ──────────────────────────────────────────────── */
+function ammunitionMovement() {
+  for (let r = 1; r <= TotalAmmo; r++) {
+    if (fire.status[r] !== "Fired") continue;
+    locate(fire.x[r], fire.y[r]); print(" ");
+    if (fire.x[r] > TopBorder) {
+      const ty = fire.type[r];
+      const draw = () => { color(fire.color[r]); locate(fire.x[r], fire.y[r]); print(String.fromCharCode(fire.char[r])); color(7); };
+      const clear = () => { fire.x[r] = 0; fire.y[r] = 0; fire.status[r] = "Ready"; };
+      if (ty >= 1 && ty <= 4) { fire.x[r]--; draw(); }
+      else if (ty === 5) { fire.x[r]--; fire.y[r] = ShipY; draw(); }
+      else if (ty === 41) { if (fire.y[r] > LeftBorder) { fire.x[r]--; fire.y[r]--; draw(); } else clear(); }
+      else if (ty === 42) { if (fire.y[r] < RightBorder) { fire.x[r]--; fire.y[r]++; draw(); } else clear(); }
+    } else if (fire.x[r] === TopBorder) {
+      fire.x[r] = 0; fire.y[r] = 0; fire.status[r] = "Ready";
+    }
+  }
+}
+
+/* ── SUB EnemyMovement ───────────────────────────────────────────────────── */
+function enemyMovement() {
+  for (let t = 1; t <= TotalEnemies; t++) {
+    if (en.hp[t] <= 0) continue;
+    color(en.color[t]); en.oldX[t] = en.x[t]; en.oldY[t] = en.y[t];
+    locate(en.x[t], en.y[t]); print(en.char[t]); color(7);
+
+    en.curMove[t] = (en.move[t] || "").charAt(en.cur[t] - 1) || "";
+    const L = (en.move[t] || "").length;
+    if (en.cur[t] < L) en.cur[t]++; else if (en.cur[t] === L) en.cur[t] = 1;
+
+    if (en.curMove[t] === "A")
+      en.curMove[t] = ["D","L","U","R","W"][Math.floor(Math.random() * 5)];
+
+    const blocked = (dx, dy) => {
+      for (let u = 1; u <= TotalEnemies; u++)
+        if (en.hp[u] > 0 && en.x[t] + dx === en.x[u] && en.y[t] + dy === en.y[u]) return true;
+      return false;
+    };
+    switch (en.curMove[t]) {
+      case "L": if (!blocked(0,-1) && en.y[t] !== LeftBorder)   en.y[t]--; break;
+      case "R": if (!blocked(0, 1) && en.y[t] !== RightBorder)  en.y[t]++; break;
+      case "U": if (!blocked(-1,0) && en.x[t] !== TopBorder)    en.x[t]--; break;
+      case "D": if (!blocked( 1,0) && en.x[t] !== BottomBorder) en.x[t]++; break;
+      case "W": break;
+    }
+
+    if (en.x[t] === ShipX && en.y[t] === ShipY) shipHit();
+    if (en.x[t] === BottomBorder) en.x[t] = TopBorder;
+
+    if (en.x[t] !== en.oldX[t] || en.y[t] !== en.oldY[t]) {
+      locate(en.oldX[t], en.oldY[t]); print(" ");
+      color(en.color[t]); locate(en.x[t], en.y[t]); print(en.char[t]); color(7);
+      if (en.oldX[t] === ShipX && en.oldY[t] === ShipY) printShipColor();
+      en.oldX[t] = en.x[t]; en.oldY[t] = en.y[t];
+    }
+  }
+}
+
+/* ── SUB LevelCalculate / LevelMessage / LevelResults ────────────────────── */
+function levelCalculate() {
+  InitialPoints = Points;
+  lv.bonus[CurrentLevel] = Math.floor(25 * (lv.allowed[CurrentLevel] - lv.time[CurrentLevel]));
+  if (lv.bonus[CurrentLevel] < 0) lv.bonus[CurrentLevel] = 0;
+  lv.accBonus[CurrentLevel] = Math.floor(10 * lv.acc[CurrentLevel] + 0.5);
+  Points += lv.bonus[CurrentLevel] + lv.accBonus[CurrentLevel];
+}
+function levelMessage() {
+  locate((BottomBorder + TopBorder) / 2, (LeftBorder + RightBorder) / 2 - 8);
+  color(23); print("Level" + num(CurrentLevel) + "Completed!"); color(7);
+}
+function levelResults() {
+  cls(); color(12);
+  printUsing("Points:          ###### Points", InitialPoints); color(7);
+  println(STRING$(33, "-"));
+  printUsing("Level:             ####", CurrentLevel);
+  printUsing("Time:              #### Seconds", lv.time[CurrentLevel]);
+  printUsing("Time Allowed:      #### Seconds", lv.allowed[CurrentLevel]); color(12);
+  printUsing("Time Bonus:      + #### Points", lv.bonus[CurrentLevel]); color(7);
+  printUsing("Shots:             #### Fired", lv.fired[CurrentLevel]);
+  printUsing("                   #### Hits", lv.hit[CurrentLevel]);
+  printUsing("Accuracy:           ### %", lv.acc[CurrentLevel]); color(12);
+  printUsing("Accuracy Bonus:  + #### Points", lv.accBonus[CurrentLevel]); color(7);
+  println(STRING$(33, "-")); color(12);
+  printUsing("Total Points:    ###### Points", Points); color(7);
+  println(); println("Press 'C' to Continue");
+}
+
+/* ── High score table ────────────────────────────────────────────────────── */
+function loadScores() {
+  const lines = HISCORE_DATA.split(/\r?\n/).filter(l => l.length);
+  for (let p = 1; p <= 10; p++) {
+    const line = lines[p - 1] ?? '"Nobody",0';
+    const i = line.indexOf('"', 1);
+    playerName[p] = line.slice(1, i);
+    playerScore[p] = +line.slice(i + 2) || 0;
+  }
+}
+/*  On your own site, persist the table by replacing loadScores/saveScores with:
+      const raw = localStorage.getItem("kamikaze.scores");
+      ... JSON.parse(raw) ... localStorage.setItem("kamikaze.scores", JSON.stringify(...))
+    It's left in memory here so the page works when opened straight off disk.       */
+function saveScores() { /* in-memory for the session */ }
+
+function insertScore(name) {
+  const rows = [];
+  for (let p = 1; p <= 10; p++) rows.push({ n: playerName[p], s: playerScore[p] });
+  rows.push({ n: name, s: Points });
+  rows.sort((a, b) => b.s - a.s);
+  for (let p = 1; p <= 10; p++) { playerName[p] = rows[p - 1].n; playerScore[p] = rows[p - 1].s; }
+  saveScores();
+}
+function printHighScores() {
+  cls(); color(3);
+  println("Name                Score"); println();
+  println(STRING$(33, "-"));
+  for (let p = 1; p <= 10; p++) { color(3); print(playerName[p]); TAB(20); println(num(playerScore[p])); }
+  color(7);
+}
+function printFinalScores(name) {
+  cls(); color(3);
+  println("Name                     Score"); println();
+  println(STRING$(33, "-")); println(); color(12);
+  print(name); TAB(25); println(num(Points)); color(3);
+  println(); println(STRING$(33, "-"));
+  for (let p = 1; p <= 10; p++) {
+    color(playerScore[p] === Points && playerName[p] === name ? 12 : 3);
+    print(playerName[p]); TAB(25); println(num(playerScore[p]));
+  }
+  color(7);
+  println(); println("Do you want to play again? [y,n]: ");
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   5. STATE MACHINE — replaces the BASIC's blocking DO…LOOP INKEY$ waits
+   ══════════════════════════════════════════════════════════════════════════ */
+let state = "menu", nameBuf = "", msgTimer = 0;
+
+function drawMenu() {
+  cls(); color(20);
+  println(); println(SPC(25) + "Kamikaze Fighter");
+  println(SPC(25) + "-------- -------"); color(7);
+  println(); println(); println();
+  println(SPC(15) + "Main Menu:"); println();
+  println(SPC(20) + "1) Play Kamikaze Fighter");
+  println(SPC(20) + "2) View Controls");
+  println(SPC(20) + "3) View High Scores");
+  println(SPC(20) + "4) View Credits");
+  println(SPC(20) + "5) Exit Game");
+  println();
+  println(SPC(15) + "What would you like to do (1-5)");
+}
+function drawControls() {
+  cls();
+  println(SPC(10) + "Controls:"); println();
+  println(SPC(12) + "Move Up       -   Up Arrow Key");
+  println(SPC(12) + "Move Down     -   Down Arrow Key");
+  println(SPC(12) + "Move Left     -   Left Arrow Key");
+  println(SPC(12) + "Move Right    -   Right Arrow Key");
+  println(SPC(12) + "Fire Weapon   -   Spacebar");
+  println(SPC(12) + "Select Weapon -   # Keys: 1, 2, 3, 4, or 5");
+  println(SPC(12) + "Exit Game     -   Esc");
+  println(SPC(12) + "Pause Game    -   P");
+  println(); println();
+  println("Press R to return to Main Menu");
+}
+function drawCredits() {
+  cls();
+  println(SPC(15) + "Credits:"); println();
+  println(SPC(15) + "Derrick Staten");
+  println(SPC(15) + "Chris Marshall");
+  println();
+  println("Press R to return to Main Menu");
+}
+function drawNamePrompt() {
+  cls();
+  println("What is your name? " + nameBuf + "_");
+}
+
+function startGame() {
+  coldStart(); loadScores();
+  CurrentLevel = 1; startLevel();
+}
+function startLevel() {
+  resetVariables(); printArena(); printDisplay(); loadEnemies();
+  state = "play";
+}
+function endLevel() {
+  resetBullets(); levelMessage();
+  state = "levelmsg"; msgTimer = 3000;
+}
+function endGame() {
+  nameBuf = ""; state = "name"; drawNamePrompt();
+}
+
+/* ── the inner DO…LOOP of SUB DelayAndMovement ───────────────────────────── */
+function handlePlayKey(k) {
+  switch (k) {
+    case "\x00K": if (ShipY > LeftBorder)   ShipY--; break;
+    case "\x00P": if (ShipX < BottomBorder) ShipX++; break;
+    case "\x00M": if (ShipY < RightBorder)  ShipY++; break;
+    case "\x00H": if (ShipX > TopBorder)    ShipX--; break;
+    case "1": case "2": case "3": case "4": case "5": {
+      const g = +k; if (gunAvailable[g] === 1) GunSelected = g; printGuns(); break;
+    }
+    case " ": fireWeapon(); break;
+    case "\x1b": Lives = -1; break;
+    case "p": case "P":
+      state = "paused";
+      locate((BottomBorder + TopBorder) / 2, (LeftBorder + RightBorder) / 2 - 5);
+      color(23); print("Game Paused"); color(7);
+      break;
+  }
+}
+function spawn(r, ty, yOff) {
+  fire.x[r] = ShipX - 1; fire.y[r] = ShipY + yOff;
+  fire.status[r] = "Fired";
+  fire.char[r] = gunChar[GunSelected];
+  fire.color[r] = gunColor[GunSelected];
+  fire.damage[r] = gunDamage[GunSelected];
+  fire.type[r] = ty;
+}
+function fireWeapon() {
+  if (ShipX <= TopBorder) return;
+  for (let r = 1; r <= TotalAmmo; r++)
+    if (fire.y[r] === ShipY && fire.x[r] === ShipX - 1) return;   // barrel already occupied
+  let slot = 0;
+  for (let r = 1; r <= TotalAmmo; r++) if (fire.status[r] === "Ready") { slot = r; break; }
+  if (!slot) return;
+  lv.fired[CurrentLevel]++; printAccuracy();
+  spawn(slot, GunSelected, 0);
+  play(gunSound[GunSelected]);
+  if (GunSelected === 4) {                                        // gun 4 fires a spread
+    if (ShipY < RightBorder)
+      for (let r = 1; r <= TotalAmmo; r++) if (fire.status[r] === "Ready") { spawn(r, 42, 1); break; }
+    if (ShipY > LeftBorder)
+      for (let r = 1; r <= TotalAmmo; r++) if (fire.status[r] === "Ready") { spawn(r, 41, -1); break; }
+  }
+}
+
+function tick50ms() {
+  ammunitionCollision();
+  ammunitionMovement();
+  ammunitionCollision();
+  enemyMovement();
+  ammunitionCollision();
+  if (Lives === -1) { endGame(); return; }
+  printShipColor();
+  Seconds += 0.05;
+  lv.time[CurrentLevel] += 0.05;
+  printTimer();
+  if (Enemies === 0) endLevel();
+}
+
+/* ── main loop ───────────────────────────────────────────────────────────── */
+let acc = 0, last = performance.now();
+function frame(now) {
+  const dt = Math.min(250, now - last); last = now; acc += dt;
+
+  let k;
+  while ((k = INKEY()) !== "") {
+    if (state === "menu") {
+      if (k === "1") { startGame(); }
+      else if (k === "2") { drawControls(); state = "controls"; }
+      else if (k === "3") { loadScores(); printHighScores(); println(); println("Press R to return to Main Menu"); state = "hiscores"; }
+      else if (k === "4") { drawCredits(); state = "credits"; }
+      else if (k === "5") { cls(); println(SPC(30) + "Play agian!"); state = "ended"; }
+    } else if (state === "controls" || state === "hiscores" || state === "credits") {
+      if (k.toUpperCase() === "R") { drawMenu(); state = "menu"; }
+    } else if (state === "play") {
+      handlePlayKey(k);
+    } else if (state === "paused") {
+      if (k === "p" || k === "P") {
+        locate((BottomBorder + TopBorder) / 2, (LeftBorder + RightBorder) / 2 - 5);
+        print("           ");
+        state = "play"; acc = 0;
+      }
+    } else if (state === "levelresults") {
+      if (k.toUpperCase() === "C") {
+        CurrentLevel++;
+        if (CurrentLevel > TotalLevels) endGame(); else startLevel();
+      }
+    } else if (state === "name") {
+      if (k === "\r") {
+        if (nameBuf.length > 0 && nameBuf.length < 21) {
+          insertScore(nameBuf); printFinalScores(nameBuf); state = "playagain";
+        }
+      } else if (k === "\b") { nameBuf = nameBuf.slice(0, -1); drawNamePrompt(); }
+      else if (k.length === 1 && k >= " " && nameBuf.length < 20) { nameBuf += k; drawNamePrompt(); }
+    } else if (state === "playagain") {
+      if (k.toUpperCase() === "Y") { drawMenu(); state = "menu"; }
+      else if (k.toUpperCase() === "N") { cls(); println(SPC(30) + "Play agian!"); state = "ended"; }
+    }
+  }
+
+  if (state === "play") {
+    // The original checks ship-versus-enemy contact continuously inside the delay loop.
+    for (let t = 1; t <= TotalEnemies; t++)
+      if (en.hp[t] > 0 && en.x[t] === ShipX && en.y[t] === ShipY) shipHit();
+    if (ShipX !== ShipOldX || ShipY !== ShipOldY) {
+      locate(ShipOldX, ShipOldY); print(" ");
+      printShipColor(); ShipOldX = ShipX; ShipOldY = ShipY;
+    }
+    while (acc >= 50) { acc -= 50; if (state === "play") tick50ms(); }
+  } else if (state === "levelmsg") {
+    msgTimer -= dt;
+    if (msgTimer <= 0) { levelCalculate(); levelResults(); state = "levelresults"; }
+  } else { acc = 0; }
+
+  render(false);
+  requestAnimationFrame(frame);
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   6. LAYOUT — size the screen to the viewport so the page never scrolls
+   ══════════════════════════════════════════════════════════════════════════ */
+const ZOOM   = 1.15;   // 1.00 = the old single-column size. Raise for a bigger canvas.
+const BASE_W = 828;    // px — what the canvas used to measure
+const MAX_W  = BASE_W * ZOOM;
+
+const stageEl  = document.querySelector(".stage");
+const bezelEl  = document.querySelector(".bezel");
+const screenEl = document.querySelector(".screen");
+
+function layout() {
+  const cs = getComputedStyle(bezelEl);
+  const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+  const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+  const availW = stageEl.clientWidth - padX;
+  const stacked = window.innerWidth <= 820;
+  const availH = stacked ? Infinity : stageEl.clientHeight - padY - 4;  // 4px slack
+  const w = Math.max(320, Math.floor(Math.min(availW, availH * 4 / 3, MAX_W)));
+  screenEl.style.width  = w + "px";
+  screenEl.style.height = Math.round(w * 3 / 4) + "px";
+}
+addEventListener("resize", layout);
+if (window.visualViewport) visualViewport.addEventListener("resize", layout);
+layout();
+
+loadScores();
+drawMenu();
+render(true);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

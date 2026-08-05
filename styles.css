@@ -1,0 +1,1328 @@
+/*
+  Shared stylesheet across index.html (lead-gen homepage) and
+  my-story.html (personal timeline / credibility page).
+
+  Parallax: CSS scroll-driven animations (animation-timeline: view()).
+  Browsers without support, and users with reduced motion, get the
+  same page with static full-bleed imagery. No JS.
+*/
+
+:root {
+  --ink: #16181d;
+  --paper: #f4f5f7;
+  --muted: #5b6069;
+  --accent: #d4763f;
+  --scrim-ink: #eceef2;
+  --scrim-muted: #b8bdc7;
+  --panel: rgba(13, 15, 19, 0.62);
+  --hairline: rgba(22, 24, 29, 0.14);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e8eaee;
+    --paper: #121317;
+    --muted: #9aa0ab;
+    --accent: #e2925e;
+    --hairline: rgba(232, 234, 238, 0.16);
+  }
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+img { max-width: 100%; display: block; }
+
+/* Base link color, and — the point of naming :visited — no browser
+   purple anywhere on the site. Wrapped in :where() so the whole thing
+   costs zero specificity beyond the `a` type selector: a bare
+   `a:visited` would be 0,1,1 and would beat single-class rules like
+   .site-nav-link (0,1,0), repainting visited nav links orange. This
+   way every component rule below wins for both states at once.
+   Browsers restrict which properties :visited may set; color is one of
+   the few that still applies. */
+a:where(:link, :visited) {
+  color: var(--accent);
+}
+
+/* ---------- Site nav ---------- */
+
+.site-nav {
+  background: #0d0f13;
+  color: #b8bdc7;
+}
+
+.site-nav-inner {
+  max-width: 1400px;
+  margin-inline: auto;
+  padding: 1.1rem clamp(1.25rem, 5vw, 4rem);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.site-nav-brand {
+  color: #fff;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+/* Both pages carry the same two destinations (story + contact) so the
+   nav reaches everything from anywhere: a quiet text link for the
+   secondary page, the pill for the CTA. */
+.site-nav-links {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.9rem, 3vw, 1.5rem);
+}
+
+.site-nav-plain {
+  color: inherit;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 550;
+  letter-spacing: 0.01em;
+  transition: color 0.15s ease;
+}
+
+.site-nav-plain:hover,
+.site-nav-plain:focus-visible { color: #fff; }
+
+/* Current-page marker. The brand doubles as the homepage link, so
+   whichever of the two you're on gets the accent underline — the nav
+   always shows where you are. */
+.site-nav-brand[aria-current="page"],
+.site-nav-plain[aria-current="page"] {
+  color: #fff;
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
+}
+
+.site-nav-link {
+  color: inherit;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 550;
+  letter-spacing: 0.01em;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.site-nav-link:hover,
+.site-nav-link:focus-visible {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* ---------- Hero ---------- */
+
+.hero {
+  position: relative;
+  min-height: 88dvh;
+  display: flex;
+  align-items: flex-end;
+  /* clip, not hidden: overflow hidden creates a scroll container,
+     which would hijack the view() timeline and freeze the parallax */
+  overflow: clip;
+  isolation: isolate;
+}
+
+/* Holding page (index.html while the site is hidden): no nav and no
+   footer, so the hero owns the whole viewport rather than leaving a
+   band of empty --paper below it. */
+.hero.hero-solo {
+  min-height: 100dvh;
+}
+
+/* Links sitting on the light hero glow or a section-head: inherit the
+   surrounding ink with an accent underline, matching what
+   .glass-panel a does inside the dark panels, so every inline link on
+   the site reads the same way regardless of what it sits on. */
+.hero-text a,
+.section-head a {
+  color: inherit;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 2px;
+}
+
+/* Page-specific modifier: anchors the text block to the top instead of
+   the bottom, for hero photos whose interesting/legible area is up top
+   (e.g. My Story's Hudson Yards shot, sky-heavy at the top). */
+.hero.hero-top {
+  align-items: flex-start;
+}
+
+.hero.hero-top .hero-inner {
+  padding: clamp(3rem, 9vh, 6.5rem) clamp(1.25rem, 5vw, 4rem) 0;
+}
+
+/* Back to the original white glow (0.25 alpha) from before My Story's
+   hero was pushed toward the Track record blue — that experiment read
+   as a dark, opaque block in production. This restores the original,
+   subtler look from when My Story first became a separate page. */
+.hero-top .hero-text::before {
+  --glow-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Mobile only: bottom-left instead of top, tighter padding on the
+   text box, and a glow opacity halfway between the too-light 0.15 and
+   the too-dark 0.25/0.9 we tried. Deliberately separate rules scoped
+   only to .hero-top .hero-text — nothing here touches .section-head/
+   Track record. */
+@media (max-width: 767px) {
+  .hero.hero-top {
+    align-items: flex-end;
+  }
+  .hero.hero-top .hero-inner {
+    padding: 0 clamp(1.25rem, 5vw, 4rem) clamp(3rem, 9vh, 6.5rem);
+  }
+  .hero-top .hero-text {
+    padding: 0.6rem 0.75rem;
+  }
+  .hero-top .hero-text::before {
+    --glow-color: rgba(255, 255, 255, 0.35);
+    inset: -8px;
+  }
+}
+
+.hero-bg,
+.chapter-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: clip;
+}
+
+.hero-bg img,
+.chapter-bg img {
+  width: 100%;
+  height: 126%;
+  object-fit: cover;
+  object-position: var(--bg-pos, center);
+  position: relative;
+  top: -13%;
+}
+
+/* Scrim so text passes contrast over any photo */
+.chapter-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(9, 10, 13, 0.78) 0%, rgba(9, 10, 13, 0.28) 55%, rgba(9, 10, 13, 0.42) 100%);
+}
+
+/* Lead-gen sections put a .section-head (heading + lede, no card behind
+   it) right at the top of the photo, so they need more darkening up
+   there than a chapter does — the SF skyline shot is bright open sky
+   exactly where that lede sits. Bottom and middle stay as above. */
+.section-photo .chapter-bg::after {
+  background: linear-gradient(to top, rgba(9, 10, 13, 0.78) 0%, rgba(9, 10, 13, 0.28) 45%, rgba(9, 10, 13, 0.62) 100%);
+}
+
+/* Hero photo (The High Line) is bright and uneven in tone (sky vs.
+   foliage and shadowed structure) — a dark text scrim wouldn't give the
+   dark hero text reliable contrast, so lighten toward the bottom
+   instead, where the text sits. */
+.hero-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.15) 45%, rgba(255, 255, 255, 0) 75%);
+}
+
+/* .hero-top moves the text to the top of the frame, so this gradient
+   needs to brighten the top instead — otherwise the hero-text glow
+   there is working alone, with none of the extra lift the bottom-
+   anchored hero gets from this same gradient, and reads weaker despite
+   using the identical --glow-color. */
+/* Two layered gradients (a pseudo-element only gets one background,
+   so both live in one comma-separated list, first on top): the white
+   boost at the top for the hero-text glow, same as before, plus a
+   dark boost at the bottom — .hero-bg has no dark scrim by default
+   (unlike .chapter-bg::after), since it's normally paired with dark
+   text at the bright end of the photo. hero-top's caption sits at the
+   opposite (bottom) end, on what would otherwise be the raw,
+   unscrimmed photo, so its white text (identical to every chapter
+   caption below it) had less contrast to work with than they do. */
+.hero-top .hero-bg::after {
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.15) 45%, rgba(255, 255, 255, 0) 75%),
+    linear-gradient(to top, rgba(9, 10, 13, 0.55) 0%, rgba(9, 10, 13, 0.15) 30%, rgba(9, 10, 13, 0) 55%);
+}
+
+.hero-inner {
+  width: 100%;
+  max-width: 1400px;
+  margin-inline: auto;
+  padding: 0 clamp(1.25rem, 5vw, 4rem) clamp(3rem, 9vh, 6.5rem);
+  /* Photo (Zermatt) is snow-bright at the bottom, where this text
+     sits, unlike the dark chapter photos below — dark text, not the
+     scrim-ink used everywhere else. */
+  color: #14161a;
+}
+
+/* Wraps text so it stays legible regardless of what's behind it in the
+   photo. No hard-edged card: a blurred pseudo-element behind the text
+   feathers into the photo instead of a crisp rounded rect. This is the
+   hero treatment only — section headings on a photo use .section-head
+   below instead. */
+.hero-text {
+  position: relative;
+  isolation: isolate;
+  display: inline-block;
+  padding: 1.5rem 1.75rem;
+}
+
+/* Every top-level section heading + lede on the lead-gen page — the
+   two on photos (Track record, Two ways to work with me) and the ones
+   on plain --paper (Start a project, testimonials) — so all four read
+   as one system regardless of what's behind them.
+
+   The photo ones used to reuse the hero's blurred glow, which never
+   worked there: the hero's glow is a light patch carrying dark text,
+   but those headings sit directly above a row of dark .glass-panel
+   cards, so the pale blob read as a second, conflicting visual system
+   floating over the section. Now there's no panel at all — type
+   straight on the background, anchored by a short accent rule that
+   ties back to the orange .proof-role / .offer-fit labels below. */
+.section-head {
+  display: block;
+}
+
+.section-head::before {
+  content: "";
+  display: block;
+  width: 52px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  margin-bottom: 1.15rem;
+}
+
+/* One shared glow mechanism for every "text sitting directly on a
+   photo" case that still uses one — the hero heading and the small
+   photo-credit caption use this exact rule so they look like one
+   consistent system, not two different treatments. Only --glow-color
+   (and, on the caption, size/position) differs. */
+.hero-text::before,
+.hero .chapter-bg-note::before {
+  content: "";
+  position: absolute;
+  inset: -14px;
+  border-radius: 16px;
+  background: var(--glow-color, rgba(255, 255, 255, 0.5));
+  filter: blur(14px);
+  z-index: -1;
+}
+
+.hero-text::before { --glow-color: rgba(255, 255, 255, 0.82); }
+
+/* Lower than the hero heading's own 0.82, not higher — the caption
+   sits in the same bottom corner as the .hero-bg::after gradient above,
+   so it already gets that same brightening boost stacked on top of
+   this glow. Giving it a higher base alpha on top of that double-
+   counted the lift and blew it out to solid white. */
+.hero .chapter-bg-note::before { --glow-color: rgba(255, 255, 255, 0.5); }
+
+/* iOS Safari only (feature-query hack: -webkit-touch-callout is only
+   ever recognized there, not on desktop Chrome/Safari or Android).
+   filter: blur() on this exact shape — absolute, negative z-index,
+   inside an isolated stacking context — silently fails to paint on
+   iOS Safari, so swap to box-shadow's blur there instead, which goes
+   through a different, more reliable render path. Desktop Chrome and
+   macOS Safari keep the filter version above, untouched. */
+@supports (-webkit-touch-callout: none) {
+  .hero-text::before,
+  .hero .chapter-bg-note::before {
+    filter: none;
+    border-radius: 16px;
+    box-shadow: 0 0 28px 20px var(--glow-color, rgba(255, 255, 255, 0.5));
+  }
+
+  /* My Story's hero, iOS only. The plain white 0.25-alpha glow above
+     is tuned for filter: blur() on desktop and reads too faint via
+     box-shadow (iOS's only working path for this effect), so iOS gets
+     its own rounded rect — blue glow plus a white wash on top, the
+     treatment Track record used before it dropped its panel. */
+  .hero-top .hero-text::before {
+    --glow-color: rgba(81, 113, 134, 0.9);
+  }
+  .hero-top .hero-text::after {
+    content: "";
+    position: absolute;
+    inset: -14px;
+    border-radius: 16px;
+    /* The actual white fill — this is what "more white" means. The
+       box-shadow below is only the soft edge feathering around it. */
+    background: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 28px 20px rgba(255, 255, 255, 0.3);
+    z-index: -1;
+  }
+
+  /* Mobile + iOS: same halfway-opacity intent as the plain-mobile
+     override above, keeping iOS's own blue color. */
+  @media (max-width: 767px) {
+    .hero-top .hero-text::before {
+      --glow-color: rgba(81, 113, 134, 0.7);
+      inset: -8px;
+    }
+    .hero-top .hero-text::after {
+      inset: -8px;
+      background: rgba(255, 255, 255, 0.6);
+      box-shadow: 0 0 20px 12px rgba(255, 255, 255, 0.6);
+    }
+  }
+}
+
+/* On a photo a .section-head has no panel behind it, so the type
+   carries its own contrast: a soft dark shadow that keeps it readable
+   over a bright patch (the SF skyline's open sky) without darkening
+   the photo any further. */
+.section-photo .section-head h2 {
+  text-shadow: 0 2px 28px rgba(9, 10, 13, 0.8), 0 1px 3px rgba(9, 10, 13, 0.55);
+}
+
+/* Brighter than the --scrim-muted used for supporting copy elsewhere:
+   this lede sits on open sky rather than inside a dark glass panel, so
+   the muted gray lost too much contrast against it. Still a step below
+   the heading's --scrim-ink, which keeps the hierarchy. */
+.section-photo .section-head .section-lede {
+  color: #dfe3ea;
+  text-shadow: 0 1px 20px rgba(9, 10, 13, 0.85), 0 1px 2px rgba(9, 10, 13, 0.5);
+}
+
+.hero h1 {
+  font-size: clamp(2rem, 4.2vw, 3.2rem);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  max-width: 20ch;
+  color: #14161a;
+}
+
+.hero p {
+  margin-top: 0.85rem;
+  font-size: clamp(0.98rem, 1.3vw, 1.1rem);
+  color: #3a3d44;
+  max-width: 64ch;
+}
+
+.hero .hero-kicker {
+  margin-top: 0.6rem;
+  font-size: clamp(0.95rem, 1.2vw, 1.05rem);
+  font-weight: 600;
+  color: #14161a;
+  max-width: 40ch;
+}
+
+.hero .hero-cta {
+  display: inline-block;
+  margin-top: 1.3rem;
+  background: var(--ink);
+  color: var(--paper);
+  text-decoration: none;
+  font-weight: 620;
+  letter-spacing: 0.01em;
+  padding: 0.85rem 1.75rem;
+  border-radius: 999px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.hero .hero-cta:hover,
+.hero .hero-cta:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(9, 10, 13, 0.28);
+}
+
+/* ---------- Chapters ---------- */
+
+.timeline {
+  list-style: none;
+}
+
+.chapter {
+  position: relative;
+  min-height: 92dvh;
+  display: flex;
+  align-items: center;
+  overflow: clip;
+  isolation: isolate;
+}
+
+.chapter-inner {
+  width: 100%;
+  max-width: 1400px;
+  margin-inline: auto;
+  padding: clamp(4rem, 12vh, 7rem) clamp(1.25rem, 5vw, 4rem);
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1.5rem;
+}
+
+/* Translucent glass card — the shared "see the photo behind the text"
+   treatment used for chapter text, homepage proof cards, and the
+   how-we-work copy. Kept separate from .chapter-card's grid placement
+   so it can be reused outside a 12-col grid without fighting layout. */
+.glass-panel {
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: clamp(1.6rem, 3vw, 2.6rem);
+  color: var(--scrim-ink);
+}
+
+.chapter-card {
+  grid-column: 7 / span 6;
+  grid-row: 1;
+  /* Without this, grid's default stretch makes the card match the
+     row height set by the polaroid, leaving empty space below short
+     text instead of shrinking to fit its own content. */
+  align-self: start;
+}
+
+.chapter:nth-child(even) .chapter-card {
+  grid-column: 1 / span 6;
+}
+
+/* Mid-depth layer: one framed print per chapter, opposite the text */
+.chapter-polaroid {
+  grid-column: 1 / span 5;
+  /* explicit row: when the print's columns start before the card's,
+     auto-placement would otherwise wrap it to a second row */
+  grid-row: 1;
+  align-self: center;
+  justify-self: center;
+  width: min(100%, 400px);
+  background: #fbfaf7;
+  padding: 4.5% 4.5% 0;
+  box-shadow: 0 24px 48px rgba(9, 10, 13, 0.45), 8px 8px 0 rgba(0, 0, 0, 0.25);
+  /* rotate property, not transform: the parallax animation owns transform */
+  rotate: -2.4deg;
+}
+
+.chapter:nth-child(even) .chapter-polaroid {
+  grid-column: 8 / span 5;
+  rotate: 2deg;
+}
+
+.chapter-polaroid img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+/* Some prints (app screenshots, etc.) shouldn't be cropped to fill
+   the square; letterbox them on black instead. */
+.chapter-polaroid img.fit-contain {
+  object-fit: contain;
+  background: #000;
+}
+
+.chapter-polaroid figcaption {
+  padding: 0.75rem 0.25rem 0.95rem;
+  font-size: 0.85rem;
+  color: #45484f;
+  text-align: center;
+}
+
+/* Variant of the polaroid slot for the Sightline chapter: three product
+   screenshots dropped in a loose pile instead of one square print.
+   Occupies the same grid cell as .chapter-polaroid and drifts with the
+   same parallax, so it reads as the same layer of the page — just
+   scattered rather than single. */
+.chapter-shots {
+  grid-column: 1 / span 5;
+  grid-row: 1;
+  align-self: center;
+  justify-self: center;
+  width: min(100%, 430px);
+  display: flex;
+  flex-direction: column;
+  /* Nudges the whole pile back toward centre: the individual prints
+     below are offset outward, which would otherwise drag the visual
+     centre of mass off to one side of the grid cell. */
+  padding-inline: 5%;
+}
+
+.chapter:nth-child(even) .chapter-shots {
+  grid-column: 8 / span 5;
+}
+
+/* Each print: white border like the polaroids, its own rotation and
+   horizontal offset so nothing lines up, and a negative top margin so
+   they overlap the way dropped prints do. Later siblings paint over
+   earlier ones, so the pile reads top-down. Rotation uses the `rotate`
+   property, not transform — the parallax animation owns transform. */
+.chapter-shot {
+  background: #fbfaf7;
+  padding: 3.5%;
+  box-shadow: 0 18px 34px rgba(9, 10, 13, 0.5), 5px 5px 0 rgba(0, 0, 0, 0.22);
+}
+
+.chapter-shot:nth-child(1) { rotate: -3.4deg; margin-right: 12%; }
+.chapter-shot:nth-child(2) { rotate: 2.2deg;  margin-left: 14%; margin-top: -7%; }
+.chapter-shot:nth-child(3) { rotate: -1.5deg; margin-right: 8%; margin-top: -6%; }
+
+.chapter-shot a {
+  display: block;
+  cursor: zoom-in;
+  transition: box-shadow 0.15s ease;
+}
+
+.chapter-shot a:hover,
+.chapter-shot a:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent);
+  outline: none;
+}
+
+/* `contain` on a 2.35:1 box: the sources run 2.24:1 to 2.46:1, so the
+   whole screenshot shows with a hairline of letterboxing at most. */
+.chapter-shot img {
+  width: 100%;
+  aspect-ratio: 2.35 / 1;
+  object-fit: contain;
+  background: #fff;
+}
+
+.chapter-shots-note {
+  margin-top: 1.1rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--scrim-muted);
+  text-align: center;
+}
+
+.chapter-shots-note a {
+  color: inherit;
+  text-decoration-color: var(--accent);
+}
+
+/* Small credit line for the full-bleed background photo, tucked in
+   the corner out of the way of the card/polaroid. Selector is
+   .hero/.chapter-qualified (not just .chapter-bg-note) so it always
+   outranks ".hero p" / ".chapter p", which would otherwise win on
+   specificity since this is a <p> nested inside both. */
+.hero .chapter-bg-note,
+.chapter .chapter-bg-note,
+.section-photo .chapter-bg-note {
+  position: absolute;
+  left: clamp(1.25rem, 5vw, 4rem);
+  right: clamp(1.25rem, 5vw, 4rem);
+  bottom: clamp(1rem, 2.5vh, 1.5rem);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+/* Hero photo is bright at the bottom (snow/pavement), same reason the
+   hero h1/p use dark text instead of the light scrim-ink everywhere
+   else — so this note needs dark text too, not the default light one. */
+.hero .chapter-bg-note {
+  isolation: isolate;
+  color: rgba(20, 22, 26, 0.6);
+  left: auto;
+  right: clamp(1.25rem, 5vw, 4rem);
+  text-align: right;
+  padding: 0.35rem 0.6rem;
+  /* Shared rule clips overflow for the ellipsis fallback; this variant
+     needs it visible so the ::before glow can bleed past the edges. */
+  overflow: visible;
+  text-overflow: unset;
+}
+
+/* My Story's hero: back to the plain caption style every chapter below
+   it uses (light text, bottom-left, no glow box) instead of the dark-
+   text/right-aligned/glow treatment above — that was tuned for bright
+   photos like The High Line, not Hudson Yards. */
+.hero-top .chapter-bg-note {
+  isolation: auto;
+  color: rgba(255, 255, 255, 0.5);
+  left: clamp(1.25rem, 5vw, 4rem);
+  right: clamp(1.25rem, 5vw, 4rem);
+  text-align: left;
+  padding: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hero-top .chapter-bg-note::before {
+  content: none;
+}
+
+.chapter-year {
+  display: block;
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  font-weight: 250;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.chapter-tags {
+  margin-top: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chapter-tag {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 550;
+  letter-spacing: 0.04em;
+  color: var(--scrim-muted);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 0.15rem 0.7rem;
+}
+
+.chapter h2 {
+  margin-top: 0.9rem;
+  font-size: clamp(1.5rem, 2.6vw, 2.2rem);
+  font-weight: 620;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+/* Business model line for work chapters — sits between the headline
+   and the body copy. */
+.chapter-business {
+  display: inline-block;
+  margin-top: 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 550;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.chapter p {
+  margin-top: 0.8rem;
+  color: var(--scrim-muted);
+  max-width: 52ch;
+}
+
+@media (max-width: 767px) {
+  .chapter-inner { display: block; }
+  .chapter-polaroid,
+  .chapter:nth-child(even) .chapter-polaroid {
+    margin: 2.5rem auto 0;
+    width: min(100%, 320px);
+  }
+  /* The pile gets a little more room than a polaroid — the prints are
+     wide, and the outward offsets eat into the usable width. */
+  .chapter-shots,
+  .chapter:nth-child(even) .chapter-shots {
+    margin: 2.5rem auto 0;
+    width: min(100%, 360px);
+  }
+}
+
+/* ---------- Parallax (progressive enhancement, no JS) ---------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .chapter-bg img {
+      animation: drift linear both;
+      animation-timeline: view();
+      will-change: transform;
+    }
+    .hero-bg img {
+      animation: drift linear both;
+      animation-timeline: view();
+      animation-range: exit;
+    }
+    @keyframes drift {
+      from { transform: translateY(-10%); }
+      to   { transform: translateY(10%); }
+    }
+
+    /* The print rises against the scroll, so it moves faster than
+       the page while the background lags behind it: three planes,
+       three speeds. The Sightline pile rides the same plane. */
+    .chapter-polaroid,
+    .chapter-shots {
+      animation: drift-mid linear both;
+      animation-timeline: view();
+      will-change: transform;
+    }
+    @keyframes drift-mid {
+      from { transform: translateY(16vh); }
+      to   { transform: translateY(-16vh); }
+    }
+  }
+
+  /* Browsers without scroll-driven animation support (e.g. Safari < 26)
+     get no fallback treatment here — just the static, non-animated
+     photo from .hero-bg img / .chapter-bg img above. A background-
+     attachment: fixed fallback used to pin the photo instead, but that
+     property is janky in desktop Safari (forces a full repaint on
+     every scroll tick), so a plain static image is the safer default. */
+}
+
+/* ---------- Lead-gen page sections ---------- */
+
+.section {
+  padding: clamp(4rem, 10vh, 7rem) clamp(1.25rem, 5vw, 4rem);
+}
+
+.section-inner {
+  max-width: 1100px;
+  margin-inline: auto;
+  position: relative;
+}
+
+.section h2 {
+  font-size: clamp(1.7rem, 3vw, 2.4rem);
+  font-weight: 640;
+  letter-spacing: -0.02em;
+  max-width: 20ch;
+}
+
+.section-lede {
+  margin-top: 1rem;
+  color: var(--muted);
+  max-width: 60ch;
+  font-size: 1.05rem;
+}
+
+/* Full-bleed photo section — reuses .chapter-bg/.chapter-bg img/
+   .chapter-bg::after as-is (same absolutely-positioned bg + scrim,
+   same parallax) for the background layer; only the section shell
+   below is new, to hold non-chapter content at an arbitrary height. */
+
+.section-photo {
+  position: relative;
+  overflow: clip;
+  isolation: isolate;
+  color: var(--scrim-ink);
+  padding-block: clamp(5rem, 13vh, 8rem);
+}
+
+.section-photo h2 { color: var(--scrim-ink); }
+.section-photo .section-lede { color: var(--scrim-muted); }
+
+/* Proof points */
+
+.proof-grid {
+  margin-top: 2.5rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .proof-grid { grid-template-columns: 1fr; }
+}
+
+/* Secondary CTA under the proof grid — a quieter pill link (not the
+   solid hero-cta button) pointing to the full My Story timeline. */
+.section-cta {
+  display: inline-block;
+  margin-top: 2rem;
+  color: inherit;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  padding: 0.55rem 1.25rem;
+  background: rgba(255, 255, 255, 0.18);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.section-cta:hover,
+.section-cta:focus-visible {
+  border-color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.proof-card h3 {
+  font-size: 1.15rem;
+  font-weight: 640;
+  letter-spacing: -0.01em;
+}
+
+/* Any inline link inside a glass panel (proof-card, chapter-card,
+   how-panel) — inherit the panel's own text color with an accent
+   underline instead of the default blue, which is unreadable against
+   the dark translucent background. */
+.glass-panel a {
+  color: inherit;
+  text-decoration-color: var(--accent);
+}
+
+.proof-role {
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.proof-card p:not(.proof-role) {
+  margin-top: 0.9rem;
+  color: var(--scrim-muted);
+  font-size: 0.96rem;
+}
+
+/* Lightbox — driven by :target. Hidden until its id is the URL
+   fragment; the full-bleed scrim link and the X both close it. Escape
+   also closes it, via the site's only script (bottom of
+   _my-story.html) — that's the one part of this CSS can't express, and
+   with JS off everything else here still works. */
+
+.lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+/* The padding is what guarantees a band of scrim on every side of the
+   image, so there's always somewhere obvious to click to dismiss —
+   never an image running edge to edge with no way out but the X. */
+.lightbox:target {
+  display: grid;
+  place-items: center;
+  padding: clamp(3.5rem, 8vh, 5rem) clamp(1.25rem, 6vw, 5rem);
+}
+
+.lightbox-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(9, 10, 13, 0.82);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.lightbox-inner {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.lightbox-inner img {
+  max-width: 100%;
+  /* Leaves room for the caption below without the pair ever exceeding
+     the padded area and pushing the image under the close button. */
+  max-height: calc(100dvh - 12rem);
+  object-fit: contain;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.5rem;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+}
+
+.lightbox-caption {
+  color: var(--scrim-muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.lightbox-caption a {
+  color: var(--scrim-ink);
+  text-decoration-color: var(--accent);
+  overflow-wrap: anywhere;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: clamp(0.75rem, 2.5vh, 1.5rem);
+  right: clamp(0.75rem, 2.5vw, 1.5rem);
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--scrim-ink);
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.lightbox-close:hover,
+.lightbox-close:focus-visible {
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* Two ways to work with me — the Build / Fractional CTO pair. Same
+   glass-panel treatment as the proof cards so the homepage reads as
+   one system, in a two-up grid instead of three. */
+
+.offer-grid {
+  margin-top: 2.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .offer-grid { grid-template-columns: 1fr; }
+}
+
+.offer-card h3 {
+  font-size: 1.3rem;
+  font-weight: 640;
+  letter-spacing: -0.01em;
+}
+
+/* The "is this you?" qualifier — accent-colored so a skimmer can find
+   their own situation without reading either card in full. */
+.offer-fit {
+  margin-top: 0.5rem;
+  color: var(--accent);
+  font-weight: 550;
+  font-size: 0.95rem;
+}
+
+.offer-card > p:not(.offer-fit) {
+  margin-top: 0.9rem;
+  color: var(--scrim-muted);
+  font-size: 0.96rem;
+}
+
+/* Concrete engagement terms: shape, length, cadence, outcome. Label
+   left, value right, hairline between rows. */
+.offer-terms {
+  margin-top: 1.4rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.offer-terms > div {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.offer-terms > div:last-child { border-bottom: none; padding-bottom: 0; }
+
+.offer-terms dt {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--scrim-muted);
+  padding-top: 0.15em;
+}
+
+.offer-terms dd {
+  font-size: 0.92rem;
+  color: var(--scrim-ink);
+}
+
+@media (max-width: 420px) {
+  .offer-terms > div { grid-template-columns: 1fr; gap: 0.15rem; }
+}
+
+/* How I engage + location, sitting on the photo below the two cards. */
+.offer-note {
+  margin-top: 2rem;
+  max-width: 62ch;
+  color: var(--scrim-ink);
+  font-size: 0.95rem;
+  text-shadow: 0 1px 12px rgba(9, 10, 13, 0.9);
+}
+
+/* Testimonials */
+
+/* The section h2 default caps at 20ch, which breaks this heading onto a
+   near-empty second line. */
+.testimonials h2 { max-width: 34ch; }
+
+.testimonial-grid {
+  margin-top: 2.5rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .testimonial-grid { grid-template-columns: 1fr; }
+}
+
+/* Not a glass-panel: this section sits on the plain page background,
+   not a photo, so it uses the light-mode paper/ink pair. */
+.testimonial-card {
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  padding: clamp(1.4rem, 2.5vw, 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.testimonial-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--hairline);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  flex: none;
+}
+
+.testimonial-avatar svg {
+  width: 48px;
+  height: 48px;
+  fill: var(--muted);
+  opacity: 0.55;
+}
+
+.testimonial-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.testimonial-card blockquote {
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.testimonial-card blockquote::before { content: "\201C"; }
+.testimonial-card blockquote::after { content: "\201D"; }
+
+.testimonial-card figcaption {
+  margin-top: auto;
+  display: grid;
+  gap: 0.1rem;
+  font-size: 0.85rem;
+}
+
+.testimonial-name { font-weight: 640; }
+.testimonial-title { color: var(--muted); }
+
+.testimonial-year {
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  opacity: 0.75;
+}
+
+/* Placeholder state (lorem ipsum + silhouette, pending real quotes).
+   Deliberately obvious in the browser so it can't ship by accident —
+   remove this class along with the placeholder copy. */
+.testimonial-card.is-placeholder {
+  border-style: dashed;
+  opacity: 0.6;
+}
+
+/* Contact form */
+
+.contact-intro {
+  margin-top: 1rem;
+  color: var(--muted);
+  max-width: 62ch;
+  font-size: 1.05rem;
+}
+
+.contact-form {
+  margin-top: 2.5rem;
+  display: grid;
+  gap: 1.25rem;
+  max-width: 640px;
+}
+
+.form-row {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.form-row label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.form-row .form-hint {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* Only Name, Email, and "What are you building" are required; every
+   other field is marked (optional) via .form-hint. Both are labelled
+   explicitly rather than relying on an asterisk convention. */
+.form-req {
+  margin-left: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  vertical-align: 0.05em;
+}
+
+.form-row input,
+.form-row select,
+.form-row textarea {
+  font: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  padding: 0.7rem 0.85rem;
+}
+
+/* Custom chevron, inset well clear of the edge — the native arrow in
+   most browsers sits flush against the border and looks cramped. */
+.form-row select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.75rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%235b6069' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7.5l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .form-row select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%239aa0ab' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7.5l5 5 5-5'/%3E%3C/svg%3E");
+  }
+}
+
+.form-row input:focus,
+.form-row select:focus,
+.form-row textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.form-row textarea {
+  resize: vertical;
+  min-height: 5.5rem;
+}
+
+.form-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 600px) {
+  .form-two-col { grid-template-columns: 1fr; }
+}
+
+.contact-submit {
+  justify-self: start;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  font: inherit;
+  font-weight: 620;
+  letter-spacing: 0.01em;
+  padding: 0.85rem 2rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.contact-submit:hover,
+.contact-submit:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(9, 10, 13, 0.28);
+}
+
+/* Thanks page */
+
+.thanks-section {
+  min-height: 70dvh;
+  display: flex;
+  align-items: center;
+}
+
+.thanks-section .section-inner {
+  max-width: 640px;
+}
+
+.thanks-section a {
+  display: inline-block;
+  margin-top: 2rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ---------- Footer ---------- */
+
+.site-foot {
+  background: #0d0f13;
+  color: #b8bdc7;
+}
+
+.site-foot-inner {
+  max-width: 1400px;
+  margin-inline: auto;
+  padding: 2rem clamp(1.25rem, 5vw, 4rem);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+}
+
+.site-foot-meta {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.site-foot a {
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: color 0.15s ease;
+  text-decoration: none;
+}
+
+.site-foot a:hover,
+.site-foot a:focus-visible { color: #fff; }
+
+.site-foot svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}

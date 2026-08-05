@@ -1,0 +1,66 @@
+# Everything is open to crawlers, including AI/LLM crawlers.
+#
+# The named agents below are all covered by the wildcard rule already —
+# they're listed explicitly as a statement of intent, since several of
+# them treat "no rule for me" and "an explicit Allow" differently in
+# their published policies, and some (Google-Extended) are opt-out only.
+
+User-agent: *
+Allow: /
+Disallow: /kamikaze/
+
+# Anthropic
+User-agent: ClaudeBot
+Allow: /
+Disallow: /kamikaze/
+
+User-agent: Claude-User
+Allow: /
+Disallow: /kamikaze/
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /kamikaze/
+
+User-agent: anthropic-ai
+Allow: /
+Disallow: /kamikaze/
+
+# OpenAI
+User-agent: GPTBot
+Allow: /
+Disallow: /kamikaze/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /kamikaze/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /kamikaze/
+
+# Google (Google-Extended governs Gemini/Vertex training, opt-out only)
+User-agent: Google-Extended
+Allow: /
+Disallow: /kamikaze/
+
+# Others
+User-agent: PerplexityBot
+Allow: /
+Disallow: /kamikaze/
+
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /kamikaze/
+
+User-agent: CCBot
+Allow: /
+Disallow: /kamikaze/
+
+User-agent: Meta-ExternalAgent
+Allow: /
+Disallow: /kamikaze/
+
+User-agent: Bytespider
+Allow: /
+Disallow: /kamikaze/
